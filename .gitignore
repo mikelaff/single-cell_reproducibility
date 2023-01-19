@@ -1,9 +1,13 @@
 # History files
 .Rhistory
 .Rapp.history
+.DS_Store
 
 # Session Data files
 .RData
+*.rds
+*.RData
+*.rda
 
 # User-specific files
 .Ruserdata
@@ -37,3 +41,23 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+# NGS data files
+*.fastq
+*.fasta
+*.sam
+*.bam
+*.sra
+*.gtf
+*.fa
+
+# Tar archives
+*.tar
+*.gz
+
+# Data files
+
+# Directories
+/data
+/results
+
