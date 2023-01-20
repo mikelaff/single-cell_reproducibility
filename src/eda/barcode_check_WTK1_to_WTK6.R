@@ -113,7 +113,7 @@ df.count.data %>%
     scale_fill_manual(values = cbPalette) +
     scale_y_continuous(labels = scales::label_comma())
 
-
+#ggsave("alevin-fry_quant_raw_unfiltered_by_wtk_sublibrary.pdf", width = 10, height = 6)
 
 # file.dir <- list.files(path = al.fry.root.dir)
 #

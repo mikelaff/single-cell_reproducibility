@@ -18,7 +18,8 @@ library(here)
 library(mikelaffr)
 
 # OUTPUT FILES #########################################################################################################
-#
+# merged sce
+sce.merged.rds <- here("results/alevin_fry/WTK5_to_WTK6_merged_sce.rds")
 
 # INPUT FILES ##########################################################################################################
 # Samples Data Table
@@ -31,8 +32,12 @@ df.sublibraries.csv <- here("data/metadata/WTK1_to_WTK6_sublibraries.csv")
 # alevin-fry quantification root directory
 al.fry.root.dir <- "/proj/steinlab/projects/IVIV_scRNA/alevin_fry_WTK1_to_WTK6/"
 
+# summarized barcode/sample count data
+df.count.data.rds <- here("results/alevin_fry/WTK1_to_WTK6_summarized_count_data.rds")
+
 # GLOBALS ##############################################################################################################
 #
+
 
 # Import Metadata ######
 df.barcodes <- read_csv(df.barcodes.csv)
@@ -40,68 +45,94 @@ df.samples <- read_csv(df.samples.csv)
 
 df.sublibraries <- read_csv(df.sublibraries.csv)
 
+# select only PGP1 samples
+df.samples %>%
+    filter(WTK_ID == "WTK5" | WTK_ID == "WTK6",
+           grepl("UNC", CODissoID) | grepl("CN", CODissoID) | grepl("CHOP", CODissoID) | grepl("Zelda", CODissoID)) %>%
+    pull(CODissoID) -> samples.pgp1
 
+sum(duplicated(samples.pgp1))
+
+# Load Count Summary Data ###########
+# df.count.data <- readRDS(df.count.data.rds)
+#
+# # filter for PGP1 samples
+# df.count.data %>%
+#     filter(CODissoID %in% samples.pgp1) -> df.count.data.pgp1
+#
+# df.count.data.pgp1 %>%
+#     group_by(CODissoID) %>%
+#     summarise(cells_per_sample = sum(count_cell_barcodes)) %>%
+#     ggplot(aes(x = CODissoID, y = cells_per_sample)) +
+#     geom_col() +
+#     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 14),
+#           axis.text.y = element_text(size = 14),
+#           axis.title.y = element_text(size = 14),
+#           title = element_text(size = 18)) +
+#     labs(y = "Cells per Sample\n(raw unfiltered)",
+#          title = "Alevin-Fry Quantified Single Cells") +
+#     scale_fill_manual(values = cbPalette) +
+#     scale_y_continuous(labels = scales::label_comma())
+#
+# ggsave("alevin-fry_quant_raw_unfiltered_pgp1_samples.pdf", width = 14, height = 8)
 
 # Import alevin-fry ############
 
-df.sublibraries$count_Cell_Barcodes <- NA
-df.sublibraries$count_Genes <- NA
-
-df.count.data <- tibble()
+# import only WTK5 and WTK6 sublibraries
+df.sublibraries %>%
+    filter(WTK_ID == "WTK5" | WTK_ID == "WTK6") -> df.sublibraries.pgp1
 
 # loop over alevin-fry count matrix directories
-for (i in 1:nrow(df.sublibraries)) {
+for (i in 1:nrow(df.sublibraries.pgp1)) {
 
     printMessage()
-    printMessage(paste("Working on sublibrary", i, "of", nrow(df.sublibraries), ":", df.sublibraries$Sublibrary_ID[i]))
+    printMessage(paste("Working on sublibrary", i, "of", nrow(df.sublibraries.pgp1), ":", df.sublibraries.pgp1$Sublibrary_ID[i]))
     printMessage()
 
     sce <- NULL
     dir.counts <- NULL
     df.coldata <- NULL
-    sublibrary.samples <- NULL
+    #seurat.obj <- NULL
 
-    dir.counts <- paste0(al.fry.root.dir, df.sublibraries$Sublibrary_ID[i], "/", df.sublibraries$Sublibrary_ID[i], "_alevin", "/", "countMatrix")
+    dir.counts <- paste0(al.fry.root.dir, df.sublibraries.pgp1$Sublibrary_ID[i], "/", df.sublibraries.pgp1$Sublibrary_ID[i], "_alevin", "/", "countMatrix")
 
     # load alevin-fry count matrix as single cell experiment using "snRNA" which is U+S+A
     sce <- loadFry(fryDir = dir.counts, outputFormat = "snRNA")
 
-    # sublibrary stats
-    # df.sublibraries$count_Cell_Barcodes[i] <- dim(sce)[2]
-    # df.sublibraries$count_Genes[i] <- dim(sce)[1]
 
-    # cell barcode stats
     df.coldata <- as_tibble(colData(sce))
+
 
     df.coldata$bc1 <- gsub("([ACTGN]{8})([ACTGN]{8})([ACTGN]{8})", "\\3", df.coldata$barcodes,  perl=T)
     df.coldata$bc2 <- gsub("([ACTGN]{8})([ACTGN]{8})([ACTGN]{8})", "\\2", df.coldata$barcodes,  perl=T)
     df.coldata$bc3 <- gsub("([ACTGN]{8})([ACTGN]{8})([ACTGN]{8})", "\\1", df.coldata$barcodes,  perl=T)
 
     df.coldata %<>%
-        left_join(dplyr::filter(df.barcodes, WTK_ID == df.sublibraries$WTK_ID[i], type == "T"), by = c("bc1" = "sequence"))
+        left_join(dplyr::filter(df.barcodes, WTK_ID == df.sublibraries.pgp1$WTK_ID[i], type == "T"), by = c("bc1" = "sequence"))
 
-    # check that all cell barcodes get assigned to a sample
-    if (sum(is.na(df.coldata$CODissoID))) {
-        printMessage("ERROR: Some cell barcodes not assigned to samples!", fillChar = "&")
+    df.coldata %<>%
+        mutate(Sublibrary_ID = df.sublibraries.pgp1$Sublibrary_ID[i])
+
+    df.coldata %<>%
+        mutate(Cell_Barcode_ID = paste(barcodes, Sublibrary_ID, sep = "_"))
+
+    df.coldata <- as.data.frame(df.coldata)
+    rownames(df.coldata) <- df.coldata$Cell_Barcode_ID
+
+    colnames(sce) <- df.coldata$Cell_Barcode_ID
+
+    # seurat.obj <- CreateSeuratObject(assay(sce), project = df.sublibraries.pgp1$Sublibrary_ID[i])
+    # seurat.obj <- AddMetaData(seurat.obj, df.coldata)
+    #
+    # seurat.obj <- subset(seurat.obj, subset = nCount_RNA > 1500 & nFeature_RNA > 1000)
+
+    if (i == 1) {
+        sce.merged <- sce
+    } else {
+        sce.merged <- cbind(sce.merged, sce)
     }
-
-    # check that all samples are represented in this sublibrary
-    df.samples %>%
-        filter(WTK_ID == df.sublibraries$WTK_ID[i]) %>%
-        pull(CODissoID) -> sublibrary.samples
-    if (!all(sublibrary.samples %in% df.coldata$CODissoID)) {
-        printMessage("ERROR: Some samples not represented in this sublibrary!", fillChar = "&")
-    }
-
-
-    df.coldata %>%
-        group_by(CODissoID, WTK_ID, well, bc1) %>%
-        summarise(count_cell_barcodes = n()) %>%
-        mutate(count_genes = dim(sce)[1],
-               Sublibrary_ID = df.sublibraries$Sublibrary_ID[i]) -> df.tmp
-
-    df.count.data %<>%
-        bind_rows(df.tmp)
 
 }
+
+saveRDS(sce.merged, sce.merged.rds)
 
