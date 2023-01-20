@@ -1,7 +1,14 @@
-# check barcode mapping to samples after alevin-fry
+# PGP1 Samples from WTK5 and WTK6 for reproducibility analysis
 
 library(fishpond)
+#library(data.table)
+library(Seurat)
+library(miQC)
+library(SeuratWrappers)
+library(flexmix)
 library(SingleCellExperiment)
+library(Matrix)
+library(stringr)
 library(dplyr)
 library(readr)
 library(magrittr)
@@ -11,8 +18,7 @@ library(here)
 library(mikelaffr)
 
 # OUTPUT FILES #########################################################################################################
-# summarized barcode/sample count data
-df.count.data.output.rds <- here("results/alevin_fry/WTK1_to_WTK6_summarized_count_data.rds")
+#
 
 # INPUT FILES ##########################################################################################################
 # Samples Data Table
@@ -26,12 +32,15 @@ df.sublibraries.csv <- here("data/metadata/WTK1_to_WTK6_sublibraries.csv")
 al.fry.root.dir <- "/proj/steinlab/projects/IVIV_scRNA/alevin_fry_WTK1_to_WTK6/"
 
 # GLOBALS ##############################################################################################################
+#
 
 # Import Metadata ######
 df.barcodes <- read_csv(df.barcodes.csv)
 df.samples <- read_csv(df.samples.csv)
 
 df.sublibraries <- read_csv(df.sublibraries.csv)
+
+
 
 # Import alevin-fry ############
 
@@ -95,79 +104,4 @@ for (i in 1:nrow(df.sublibraries)) {
         bind_rows(df.tmp)
 
 }
-
-printMessage("Saving count data...")
-saveRDS(df.count.data, df.count.data.output.rds)
-
-# Load Count Summary Data ###########
-df.count.data <- readRDS(df.count.data.output.rds)
-
-df.count.data %>%
-    group_by(Sublibrary_ID, WTK_ID) %>%
-    summarise(cells_per_sublibrary = sum(count_cell_barcodes)) %>%
-    ggplot(aes(x = Sublibrary_ID, y = cells_per_sublibrary, fill = WTK_ID)) +
-    geom_col() +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
-    labs(y = "Cells per Sublibrary\n(raw unfiltered)",
-         title = "Alevin-Fry Quantified Single Cells") +
-    scale_fill_manual(values = cbPalette) +
-    scale_y_continuous(labels = scales::label_comma())
-
-
-
-# file.dir <- list.files(path = al.fry.root.dir)
-#
-# wtk6.dirs <- file.dir[grep("WTK6", file.dir)]
-#
-# sce.wtk6.1 <- loadFry(fryDir = paste0(al.fry.root.dir, wtk6.dirs[1], "/", wtk6.dirs[1], "_alevin", "/", "countMatrix"), outputFormat = "snRNA")
-#
-#
-# sce.wtk6.1$bc1 <- gsub("([ACTGN]{8})([ACTGN]{8})([ACTGN]{8})", "\\3", sce.wtk6.1$barcodes,  perl=T)
-# sce.wtk6.1$bc2 <- gsub("([ACTGN]{8})([ACTGN]{8})([ACTGN]{8})", "\\2", sce.wtk6.1$barcodes,  perl=T)
-# sce.wtk6.1$bc3 <- gsub("([ACTGN]{8})([ACTGN]{8})([ACTGN]{8})", "\\1", sce.wtk6.1$barcodes,  perl=T)
-#
-# df.coldata <- as_tibble(colData(sce.wtk6.1))
-#
-# # Import Barcode List #######
-#
-# df.barcodes %<>%
-#     filter(WTK_ID == "WTK6")
-#
-# all(df.barcodes$sequence[df.barcodes$type == "T"] %in% df.coldata$bc1)
-# all(df.coldata$bc1 %in% df.barcodes$sequence[df.barcodes$type == "T"])
-#
-# df.coldata %<>%
-#     left_join(df.barcodes, by = c("bc1" = "sequence"))
-#
-# summary(as.factor(df.coldata$type))
-# sum(is.na(df.coldata$CODissoID))
-#
-# df.coldata %>%
-#     group_by(CODissoID) %>%
-#     summarise(count_cells = n()) %>%
-#     ggplot(aes(x = CODissoID, y = count_cells)) +
-#     geom_col()
-#
-# df.coldata %>%
-#     group_by(bc1) %>%
-#     summarise(count_cells = n())
-
-# Scratch #####
-
-dir.counts <- paste0(al.fry.root.dir, df.sublibraries$Sublibrary_ID[1], "/", df.sublibraries$Sublibrary_ID[1], "_alevin", "/", "countMatrix")
-
-# load alevin-fry count matrix as single cell experiment using "snRNA" which is U+S+A
-sce.sl2.l3 <- loadFry(fryDir = dir.counts, outputFormat = "snRNA")
-
-dir.counts <- paste0(al.fry.root.dir, df.sublibraries$Sublibrary_ID[2], "/", df.sublibraries$Sublibrary_ID[2], "_alevin", "/", "countMatrix")
-sce.sl2.l4 <- loadFry(fryDir = dir.counts, outputFormat = "snRNA")
-
-sum(colnames(sce.sl2.l3) %in% colnames(sce.sl2.l4))
-sum(colnames(sce.sl2.l4) %in% colnames(sce.sl2.l3))
-
-df.colsums.l3 <- tibble(cell_barcodes = names(colSums(assay(sce.sl2.l3))), counts_per_cell = colSums(assay(sce.sl2.l3)))
-df.colsums.l4 <- tibble(cell_barcodes = names(colSums(assay(sce.sl2.l4))), counts_per_cell = colSums(assay(sce.sl2.l4)))
-
-
-
 
