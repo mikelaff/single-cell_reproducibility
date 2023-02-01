@@ -55,14 +55,16 @@ df.gencode <- read_csv(df.gencode.csv)
 # Load Seurat Object ########
 seur.filtered <- readRDS(seurat.merged.filtered.rds)
 dim(seur.filtered)
+seur.filtered@meta.data$Sample <- paste(seur.filtered@meta.data$Site, seur.filtered@meta.data$Day, seur.filtered@meta.data$Rep, sep = "_")
+
 #str(seur.filtered)
 
 # Subsample Cells
-seur.sample <- seur.filtered[, sample(colnames(seur.filtered), size = 20000, replace = FALSE)]
-dim(seur.sample)
+#seur.sample <- seur.filtered[, sample(colnames(seur.filtered), size = 20000, replace = FALSE)]
+#dim(seur.sample)
 
-seur.sample@meta.data$Sample <- paste(seur.sample@meta.data$Site, seur.sample@meta.data$Day, seur.sample@meta.data$Rep, sep = "_")
-rm(seur.filtered)
+#seur.sample@meta.data$Sample <- paste(seur.sample@meta.data$Site, seur.sample@meta.data$Day, seur.sample@meta.data$Rep, sep = "_")
+#rm(seur.filtered)
 # Normalize
 #seur.filtered <- NormalizeData(seur.filtered)
 #str(seur.filtered)
@@ -79,39 +81,39 @@ df.gencode %>%
     filter(chrom == "chrM") %>%
     pull(gene_id) -> ensg.mt
 
-seur.sample <- PercentageFeatureSet(object = seur.sample, features = ensg.mt, col.name = "percent.mt")
+seur.filtered <- PercentageFeatureSet(object = seur.filtered, features = ensg.mt, col.name = "percent.mt")
 
 # Run SCTransform
-seur.sample <- SCTransform(seur.sample, method = "glmGamPoi", vars.to.regress = "percent.mt", verbose = TRUE)
+seur.filtered <- SCTransform(seur.filtered, method = "glmGamPoi", vars.to.regress = "percent.mt", verbose = TRUE)
 
-pdf("scaled_transformed_resolution_0.1.pdf", height = 7, width = 10)
-seur.sample <- RunPCA(seur.sample, verbose = TRUE)
-ElbowPlot(seur.sample)
+pdf("scaled_transformed_resolution_0.8_full.pdf", height = 7, width = 10)
+seur.filtered <- RunPCA(seur.filtered, verbose = TRUE)
+ElbowPlot(seur.filtered)
 
-DimPlot(seur.sample, reduction = "pca", group.by = "Day")
-DimPlot(seur.sample, reduction = "pca", group.by = "Site")
-DimPlot(seur.sample, reduction = "pca", group.by = "WTK_ID")
-FeaturePlot(seur.sample, reduction = "pca", features = c("percent.mt"))
+DimPlot(seur.filtered, reduction = "pca", group.by = "Day")
+DimPlot(seur.filtered, reduction = "pca", group.by = "Site")
+DimPlot(seur.filtered, reduction = "pca", group.by = "WTK_ID")
+FeaturePlot(seur.filtered, reduction = "pca", features = c("percent.mt"))
 
-seur.sample <- RunUMAP(seur.sample, dims = 1:10, verbose = TRUE)
+seur.filtered <- RunUMAP(seur.filtered, dims = 1:10, verbose = TRUE)
 
-seur.sample <- FindNeighbors(seur.sample, dims = 1:10, verbose = TRUE)
-seur.sample <- FindClusters(seur.sample, verbose = TRUE, resolution = 0.8)
+seur.filtered <- FindNeighbors(seur.filtered, dims = 1:10, verbose = TRUE)
+seur.filtered <- FindClusters(seur.filtered, verbose = TRUE, resolution = 0.8)
 
-pdf("scaled_transformed_resolution_0.8.pdf", height = 7, width = 10)
-DimPlot(seur.sample,
+#pdf("scaled_transformed_resolution_0.8.pdf", height = 7, width = 10)
+DimPlot(seur.filtered,
         label = FALSE)
 
-DimPlot(seur.sample,
+DimPlot(seur.filtered,
         group.by = "Day",
         label = FALSE)
-DimPlot(seur.sample,
+DimPlot(seur.filtered,
         group.by = "Site",
         label = FALSE)
-DimPlot(seur.sample,
+DimPlot(seur.filtered,
         group.by = "WTK_ID",
         label = FALSE)
-DimPlot(seur.sample,
+DimPlot(seur.filtered,
         group.by = "Sample",
         label = FALSE)
 dev.off()
