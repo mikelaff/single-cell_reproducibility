@@ -10,6 +10,8 @@ library(here)
 df.samples.csv <- here("data/metadata/WTK1_to_WTK6_mapping_by_sample.csv")
 # Barcodes Data Table
 df.barcodes.csv <- here("data/metadata/WTK1_to_WTK6_mapping_by_barcode.csv")
+# Sublibraries Data Table
+df.sublibraries.csv <- here("data/metadata/WTK1_to_WTK6_sublibraries.csv")
 
 # INPUT FILES ##########################################################################################################
 # WTK1 Mapping csv
@@ -27,6 +29,9 @@ wtk6.mapping.csv <- "/proj/steinlab/projects/IVIV_scRNA/InfoVerifiedID/WTK6Mappi
 
 # First barcodes (48 oligo dT barcodes, 48 rand hex barcodes)
 barcode.one.csv <- here("data/barcode/bc_data_v2.csv")
+
+# Sublibrary directories root
+sublibrary.dir <- "/proj/steinlab/projects/IVIV_scRNA/alevin_fry_WTK1_to_WTK6/"
 
 # GLOBALS ##############################################################################################################
 # Well A1 to D12
@@ -185,7 +190,18 @@ for (i in 1:nrow(df.samples)) {
 df.barcodes %<>%
     left_join(df.barcode.builder, by = c("WTK_ID", "sequence", "type"))
 
+# Compile Sublibraries ##########
+sublib.dirs <- list.dirs(sublibrary.dir, full.names = FALSE, recursive = FALSE)
+
+df.sublibraries <- tibble(Sublibrary_ID = sublib.dirs)
+
+df.sublibraries %<>%
+    mutate(WTK_ID = sapply(strsplit(Sublibrary_ID, "_"), `[`, 1),
+           Sublibrary = sapply(strsplit(Sublibrary_ID, "_"), `[`, 2))
+
 # Save Tables ##########
 
 write_csv(df.samples, df.samples.csv)
 write_csv(df.barcodes, df.barcodes.csv)
+write_csv(df.sublibraries, df.sublibraries.csv)
+
