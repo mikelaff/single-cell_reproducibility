@@ -24,11 +24,11 @@ library(mikelaffr)
 # OUTPUT FILES #########################################################################################################
 
 # merged seurat filtered file
-seurat.merged.filtered.rds <- here("results/seurat/20230126_PGP1_filtered_seurat_object.rds")
+seurat.merged.filtered.rds <- here("results/seurat/20230201_PGP1_filtered_seurat_object.rds")
 
 # INPUT FILES ##########################################################################################################
 # merged seurat file, unfiltered
-seurat.merged.rds <- here("results/seurat/PGP1_seurat_object.rds")
+seurat.merged.rds <- here("results/seurat/20230201_PGP1_seurat_object.rds")
 
 # gencode gtf file
 gencode.gtf <- here("data/refgenome/gencode/gencode.v40.annotation.gtf.gz")
@@ -67,7 +67,7 @@ seurat.merged <- RunMiQC(seurat.merged, percent.mt = "percent.mt", nFeature_RNA 
 
 df.cellData <- as_tibble(seurat.merged@meta.data)
 
-pdf("alevin-fry_count_filtering.pdf", width = 14, height = 8)
+pdf("20230203_alevin-fry_count_filtering_pgp1.pdf", width = 14, height = 8)
 df.cellData %>%
     slice_sample(prop = 0.1) %>%
     arrange(percent.mt) %>%
@@ -160,7 +160,7 @@ df.cellData %>%
           axis.text.y = element_text(size = 14),
           axis.title.y = element_text(size = 14)) +
     scale_y_log10(labels = scales::label_comma()) +
-    scale_color_manual(values = cbPalette) +
+    scale_color_manual(values = cbPalette[c(3,1,2)]) +
     labs(title = "Alevin-fry miQC Filtered Cells",
          caption = "miQC post. prob < 0.75")
 
@@ -174,7 +174,7 @@ df.cellData %>%
           axis.text.y = element_text(size = 14),
           axis.title.y = element_text(size = 14)) +
     scale_y_log10(labels = scales::label_comma()) +
-    scale_color_manual(values = cbPalette) +
+    scale_color_manual(values = cbPalette[c(3,1,2)]) +
     labs(title = "Alevin-fry miQC Filtered Cells",
          caption = "miQC post. prob < 0.75")
 
@@ -217,7 +217,7 @@ df.cellData %>%
 #     labs(title = "Alevin-fry miQC Filtered Cells",
 #          caption = "miQC post. prob < 0.75")
 #
-# #ggsave("filter_thresholds.pdf", height = 20, width = 25)
+# ggsave("20230203_filter_thresholds_pgp1.pdf", height = 20, width = 25)
 
 #hi
 
@@ -244,6 +244,8 @@ dim(seurat.merged.filtered)
 rm(seurat.merged)
 
 # save seurat filtered object
+seurat.merged.filtered <- PercentageFeatureSet(object = seurat.merged.filtered, features = ensg.mt, col.name = "percent.mt")
+
 saveRDS(seurat.merged.filtered, seurat.merged.filtered.rds)
 
 
@@ -275,7 +277,7 @@ df.cellData.filtered %>%
           axis.text.y = element_text(size = 14),
           axis.title.y = element_text(size = 14)) +
     scale_y_log10(labels = scales::label_comma()) +
-    scale_color_manual(values = cbPalette) +
+    scale_color_manual(values = cbPalette[c(3,1,2)]) +
     labs(title = "Alevin-fry miQC/Count Filtered Cells",
          caption = "miQC post. prob < 0.75 & nFeature_RNA > 1000 & nCount_RNA > 1500")
 
@@ -288,7 +290,7 @@ df.cellData.filtered %>%
           axis.text.y = element_text(size = 14),
           axis.title.y = element_text(size = 14)) +
     scale_y_log10(labels = scales::label_comma()) +
-    scale_color_manual(values = cbPalette) +
+    scale_color_manual(values = cbPalette[c(3,1,2)]) +
     labs(title = "Alevin-fry miQC/Count Filtered Cells",
          caption = "miQC post. prob < 0.75 & nFeature_RNA > 1000 & nCount_RNA > 1500")
 

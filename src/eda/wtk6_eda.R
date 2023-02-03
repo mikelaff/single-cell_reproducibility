@@ -188,4 +188,4 @@ seurat.wtk6.1.filt <- subset(seurat.wtk6.1, subset = nCount_RNA > 1500 & nFeatur
 
 View(seurat.wtk6.1@meta.data)
 
-AddM
+#df.tmp <- readRDS("/proj/steinlab/projects/IVIV_scRNA/InfoVerifiedID/RObjects/WTK1Verified.rds")
