@@ -61,3 +61,5 @@ vignettes/*.pdf
 /data
 /results
 
+# Graphs
+*.pdf
