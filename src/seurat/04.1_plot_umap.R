@@ -32,22 +32,37 @@ dir.create(dir.pdf, showWarnings = FALSE, recursive = TRUE)
 # merged and filtered, sctransformed with sample regressed
 seurat.transformed.rds <- here("results/seurat/20230205_PGP1_QCfiltered_SCTransform_sample_regressed_seurat_object.rds")
 
+# integrated dataset 10% of cells
+seurat.transformed.rds <- here("results/seurat/20230214_PGP1_10percent_of_cells_integrated_seurat_object.rds")
+
 # gencode gene names, types, and ensgid
 df.gencode.csv <- here("data/refgenome/gencode/gencode.v40.genes.csv.gz")
 
 # GLOBALS ##############################################################################################################
 #
 
-#
+# load gene names
+df.gencode <- read_csv(df.gencode.csv)
 
-
-printMessage("Loading SCTransform Seurat Object...")
+printMessage("Loading Seurat Object...")
 seur.filtered <- readRDS(seurat.transformed.rds)
-printMessage("Finished Loading...")
+printMessage("Finished Loading.")
+
+# Subsample Cells
+# seur.sample <- seur.filtered[, sample(colnames(seur.filtered), size = 10000, replace = FALSE)]
+# rm(seur.filtered)
+# seur.filtered <- seur.sample
+# rm(seur.sample)
+
+DefaultAssay(seur.filtered) <- "integrated"
+seur.filtered <- RunPCA(seur.filtered, verbose = TRUE)
+seur.filtered <- RunUMAP(seur.filtered, dims = 1:10, verbose = TRUE)
+
+seur.filtered <- FindNeighbors(seur.filtered, dims = 1:10, verbose = TRUE)
+seur.filtered <- FindClusters(seur.filtered, verbose = TRUE, resolution = 0.8)
 
 pdf(paste0(dir.pdf, "20230205_scaled_transformed_allCells_0.8_sampleRegressed.pdf"), height = 5, width = 7)
 
-seur.filtered <- RunPCA(seur.filtered, verbose = TRUE)
 ElbowPlot(seur.filtered)
 
 printMessage("Plotting PCA")
@@ -56,10 +71,7 @@ DimPlot(seur.filtered, reduction = "pca", group.by = "Site")
 DimPlot(seur.filtered, reduction = "pca", group.by = "WTK_ID")
 FeaturePlot(seur.filtered, reduction = "pca", features = c("percent.mt"))
 
-seur.filtered <- RunUMAP(seur.filtered, dims = 1:10, verbose = TRUE)
 
-seur.filtered <- FindNeighbors(seur.filtered, dims = 1:10, verbose = TRUE)
-seur.filtered <- FindClusters(seur.filtered, verbose = TRUE, resolution = 0.8)
 
 printMessage("Plotting UMAPs")
 #pdf("scaled_transformed_resolution_0.8.pdf", height = 7, width = 10)
@@ -112,6 +124,34 @@ FeaturePlot(seur.filtered, reduction = "umap", features = c("ENSG00000118271.12"
 FeaturePlot(seur.filtered, reduction = "umap", features = c("ENSG00000176165.12"), pt.size = ptsize) + ggtitle("FOXG1")
 FeaturePlot(seur.filtered, reduction = "umap", features = c("ENSG00000180613.11"), pt.size = ptsize) + ggtitle("GSX2")
 FeaturePlot(seur.filtered, reduction = "umap", features = c("ENSG00000106852.16"), pt.size = ptsize) + ggtitle("LHX6")
+
+#HTR1A, HTR1B, HTR1D, HTR2A, HTR2B, HTR2C, HTR3A, HTR3B, HTR5A, HTR6, HTR7, ADRB1, ADRB2, DRD1, DRD2, DRD3, DRD4, DRD5, HRH3, HRH4
+
+gene.names <- c("DCX", "BCL11B", "SATB2", "HTR1A", "HTR1B", "HTR1D", "HTR2A", "HTR2B", "HTR2C", "HTR3A", "HTR3B", "HTR5A", "HTR6", "HTR7",
+                "ADRB1", "ADRB2", "DRD1", "DRD2", "DRD3", "DRD4", "DRD5", "HRH3", "HRH4")
+
+gene.ids <- df.gencode$gene_id[match(gene.names, df.gencode$gene_name)]
+
+DefaultAssay(seur.filtered) <- "SCT"
+
+plots <- FeaturePlot(seur.filtered, features = gene.ids, combine = FALSE, raster = TRUE)
+plots <- lapply(1:length(gene.ids), function(x) {plots[[x]] + labs(title = gene.names[x])})
+
+Reduce( `+`, plots ) +
+    patchwork::plot_layout( ncol = 4 )
+
+ggsave("UMAP.for.clozapine.PGP1.pdf", height = 20, width = 20)
+
+CombinePlots(plots, ncol = 4)
+
+print(plots[[1]])
+
+gene.to.plot.by.name <- c("SOX2", "MKI67", "PAX6", "ZBED1")
+
+
+
+
+
 
 printMessage("Finished")
 
