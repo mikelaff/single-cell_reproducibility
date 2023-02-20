@@ -22,7 +22,6 @@ library(plyranges)
 library(mikelaffr)
 
 # OUTPUT FILES #########################################################################################################
-
 # merged seurat filtered file
 seurat.merged.filtered.rds <- here("results/seurat/20230201_PGP1_filtered_seurat_object.rds")
 
@@ -299,5 +298,23 @@ dev.off()
 
 
 
+seur.iviv <- readRDS("/proj/steinlab/projects/IVIV_scRNA/IBIS/data/20230109.keep.snRNA.ppMT.0.75.nC.1500.nF.1000.QCed.rds")
 
+df.cellData.ivi <- as_tibble(seur.iviv@meta.data)
 
+df.cellData.ivi %>%
+    group_by(sampleNames, WTK) %>%
+    dplyr::summarise(cell_count = dplyr::n()) %>%
+    ggplot(aes(x = reorder(sampleNames, cell_count), y = cell_count, fill = factor(WTK))) +
+    geom_col(size = 1, width = 0.9) +
+    geom_text(data = function(x) subset(x, cell_count < max(cell_count)), mapping = aes(label = formatC(cell_count, format = "d", big.mark = ",")), vjust = 0.5, angle = 90, hjust = 0) +
+    geom_text(data = function(x) subset(x, cell_count == max(cell_count)), mapping = aes(label = formatC(cell_count, format = "d", big.mark = ",")), vjust = 0.5, angle = 90, hjust = 1) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 14),
+          axis.text.y = element_text(size = 14),
+          axis.title.y = element_text(size = 14)) +
+    scale_y_continuous(labels = scales::label_comma()) +
+    scale_fill_viridis_d() +
+    labs(title = "Alevin-fry miQC/Count Filtered Cells",
+         caption = "miQC post. prob < 0.75 & nFeature_RNA > 1000 & nCount_RNA > 1500")
+
+col.names.pgp1 <- colnames(seur.iviv)[grepl("pgp1", colnames(seur.iviv))]
