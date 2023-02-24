@@ -61,7 +61,7 @@ seur.filtered <- RunUMAP(seur.filtered, dims = 1:10, verbose = TRUE)
 seur.filtered <- FindNeighbors(seur.filtered, dims = 1:10, verbose = TRUE)
 seur.filtered <- FindClusters(seur.filtered, verbose = TRUE, resolution = 0.8)
 
-pdf(paste0(dir.pdf, "20230205_scaled_transformed_allCells_0.8_sampleRegressed.pdf"), height = 5, width = 7)
+pdf(paste0(dir.pdf, "20230220_10percent_cells_full_integrated_0.8_clustered.pdf"), height = 5, width = 7)
 
 ElbowPlot(seur.filtered)
 
@@ -72,7 +72,7 @@ DimPlot(seur.filtered, reduction = "pca", group.by = "WTK_ID")
 FeaturePlot(seur.filtered, reduction = "pca", features = c("percent.mt"))
 
 
-
+DefaultAssay(seur.filtered) <- "SCT"
 printMessage("Plotting UMAPs")
 #pdf("scaled_transformed_resolution_0.8.pdf", height = 7, width = 10)
 DimPlot(seur.filtered,
@@ -127,30 +127,30 @@ FeaturePlot(seur.filtered, reduction = "umap", features = c("ENSG00000106852.16"
 
 #HTR1A, HTR1B, HTR1D, HTR2A, HTR2B, HTR2C, HTR3A, HTR3B, HTR5A, HTR6, HTR7, ADRB1, ADRB2, DRD1, DRD2, DRD3, DRD4, DRD5, HRH3, HRH4
 
-gene.names <- c("DCX", "BCL11B", "SATB2", "HTR1A", "HTR1B", "HTR1D", "HTR2A", "HTR2B", "HTR2C", "HTR3A", "HTR3B", "HTR5A", "HTR6", "HTR7",
-                "ADRB1", "ADRB2", "DRD1", "DRD2", "DRD3", "DRD4", "DRD5", "HRH3", "HRH4")
-
-gene.ids <- df.gencode$gene_id[match(gene.names, df.gencode$gene_name)]
-
-DefaultAssay(seur.filtered) <- "SCT"
-
-plots <- FeaturePlot(seur.filtered, features = gene.ids, combine = FALSE, raster = TRUE)
-plots <- lapply(1:length(gene.ids), function(x) {plots[[x]] + labs(title = gene.names[x])})
-
-Reduce( `+`, plots ) +
-    patchwork::plot_layout( ncol = 4 )
-
-ggsave("UMAP.for.clozapine.PGP1.pdf", height = 20, width = 20)
-
-CombinePlots(plots, ncol = 4)
-
-print(plots[[1]])
-
-gene.to.plot.by.name <- c("SOX2", "MKI67", "PAX6", "ZBED1")
-
-
+# gene.names <- c("DCX", "BCL11B", "SATB2", "HTR1A", "HTR1B", "HTR1D", "HTR2A", "HTR2B", "HTR2C", "HTR3A", "HTR3B", "HTR5A", "HTR6", "HTR7",
+#                 "ADRB1", "ADRB2", "DRD1", "DRD2", "DRD3", "DRD4", "DRD5", "HRH3", "HRH4")
+#
+# gene.ids <- df.gencode$gene_id[match(gene.names, df.gencode$gene_name)]
+#
+# DefaultAssay(seur.filtered) <- "SCT"
+#
+# plots <- FeaturePlot(seur.filtered, features = gene.ids, combine = FALSE, raster = TRUE)
+# plots <- lapply(1:length(gene.ids), function(x) {plots[[x]] + labs(title = gene.names[x])})
+#
+# Reduce( `+`, plots ) +
+#     patchwork::plot_layout( ncol = 4 )
+#
+# ggsave("UMAP.for.clozapine.PGP1.pdf", height = 20, width = 20)
+#
+# CombinePlots(plots, ncol = 4)
+#
+# print(plots[[1]])
+#
+# gene.to.plot.by.name <- c("SOX2", "MKI67", "PAX6", "ZBED1")
 
 
+
+dev.off()
 
 
 printMessage("Finished")

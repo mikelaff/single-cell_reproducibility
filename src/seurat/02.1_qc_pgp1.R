@@ -30,7 +30,9 @@ seurat.merged.filtered.rds <- here("results/seurat/20230201_PGP1_filtered_seurat
 seurat.merged.rds <- here("results/seurat/20230201_PGP1_seurat_object.rds")
 
 # gencode gtf file
-gencode.gtf <- here("data/refgenome/gencode/gencode.v40.annotation.gtf.gz")
+#gencode.gtf <- here("data/refgenome/gencode/gencode.v40.annotation.gtf.gz")
+# gencode gene names, types, and ensgid
+df.gencode.csv <- here("data/refgenome/gencode/gencode.v40.genes.csv.gz")
 
 # GLOBALS ##############################################################################################################
 #
@@ -38,16 +40,16 @@ gencode.gtf <- here("data/refgenome/gencode/gencode.v40.annotation.gtf.gz")
 
 
 # Load GTF File #######
-gencode <- read_gff(gencode.gtf)
-
-df.gencode <- as_tibble(gencode)
-
-rm(gencode)
-
-df.gencode %<>%
-    filter(type == "gene") %>%
-    select(gene_id, gene_type, gene_name, chrom = seqnames)
-
+# gencode <- read_gff(gencode.gtf)
+#
+# df.gencode <- as_tibble(gencode)
+#
+# rm(gencode)
+#
+# df.gencode %<>%
+#     filter(type == "gene") %>%
+#     select(gene_id, gene_type, gene_name, chrom = seqnames)
+df.gencode <- read_csv(df.gencode.csv)
 
 # Load Seurat Object ########
 seurat.merged <- readRDS(seurat.merged.rds)
@@ -308,7 +310,7 @@ df.cellData.ivi %>%
     ggplot(aes(x = reorder(sampleNames, cell_count), y = cell_count, fill = factor(WTK))) +
     geom_col(size = 1, width = 0.9) +
     geom_text(data = function(x) subset(x, cell_count < max(cell_count)), mapping = aes(label = formatC(cell_count, format = "d", big.mark = ",")), vjust = 0.5, angle = 90, hjust = 0) +
-    geom_text(data = function(x) subset(x, cell_count == max(cell_count)), mapping = aes(label = formatC(cell_count, format = "d", big.mark = ",")), vjust = 0.5, angle = 90, hjust = 1) +
+    geom_text(data = function(x) subset(x, cell_count == max(cell_count)), mapping = aes(label = formatC(cell_count, format = "d", big.mark = ",")), vjust = 0.5, angle = 90, hjust = 1, color = "white") +
     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 14),
           axis.text.y = element_text(size = 14),
           axis.title.y = element_text(size = 14)) +
@@ -316,5 +318,13 @@ df.cellData.ivi %>%
     scale_fill_viridis_d() +
     labs(title = "Alevin-fry miQC/Count Filtered Cells",
          caption = "miQC post. prob < 0.75 & nFeature_RNA > 1000 & nCount_RNA > 1500")
+#
+# col.names.pgp1 <- colnames(seur.iviv)[grepl("pgp1", colnames(seur.iviv))]
 
-col.names.pgp1 <- colnames(seur.iviv)[grepl("pgp1", colnames(seur.iviv))]
+
+df.cellData.ivi %>%
+    ggplot(aes(x = percent.mt, fill = WTK)) +
+    geom_histogram(position = "dodge")
+
+
+
