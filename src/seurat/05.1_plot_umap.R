@@ -30,10 +30,11 @@ dir.create(dir.pdf, showWarnings = FALSE, recursive = TRUE)
 
 # INPUT FILES ##########################################################################################################
 # merged and filtered, sctransformed with sample regressed
-seurat.transformed.rds <- here("results/seurat/20230205_PGP1_QCfiltered_SCTransform_sample_regressed_seurat_object.rds")
+#seurat.transformed.rds <- here("results/seurat/20230205_PGP1_QCfiltered_SCTransform_sample_regressed_seurat_object.rds")
+seurat.transformed.rds <- here("results/seurat/20230220_PGP1_ALL_cells_UNCR3_reference_integrated_seurat_object.rds")
 
 # integrated dataset 10% of cells
-seurat.transformed.rds <- here("results/seurat/20230214_PGP1_10percent_of_cells_integrated_seurat_object.rds")
+#seurat.transformed.rds <- here("results/seurat/20230214_PGP1_10percent_of_cells_integrated_seurat_object.rds")
 
 # gencode gene names, types, and ensgid
 df.gencode.csv <- here("data/refgenome/gencode/gencode.v40.genes.csv.gz")
@@ -59,9 +60,9 @@ seur.filtered <- RunPCA(seur.filtered, verbose = TRUE)
 seur.filtered <- RunUMAP(seur.filtered, dims = 1:10, verbose = TRUE)
 
 seur.filtered <- FindNeighbors(seur.filtered, dims = 1:10, verbose = TRUE)
-seur.filtered <- FindClusters(seur.filtered, verbose = TRUE, resolution = 0.8)
+seur.filtered <- FindClusters(seur.filtered, verbose = TRUE, resolution = 0.6)
 
-pdf(paste0(dir.pdf, "20230220_10percent_cells_full_integrated_0.8_clustered.pdf"), height = 5, width = 7)
+pdf(paste0(dir.pdf, "20230227_ALL_cells_full_integrated_0.6_clustered.pdf"), height = 5, width = 7)
 
 ElbowPlot(seur.filtered)
 
@@ -154,4 +155,23 @@ dev.off()
 
 
 printMessage("Finished")
+
+
+
+#seur.kreig <- readRDS("/proj/steinlab/projects/IVIV_scRNA/youngsook_pine/extData_annotation/kreigstein_primary_seuratObject_SCTv2/Kreigstein_primary_integrated.rds")
+
+
+#DefaultAssay(seur.filtered) <- "SCT"
+seur.filtered <- PrepSCTFindMarkers(seur.filtered)
+
+pgp1.markers <- FindAllMarkers(seur.filtered)
+
+
+pgp1.markers %>%
+    group_by(cluster) %>%
+    top_n(n = 10, wt = avg_log2FC) -> top10
+DoHeatmap(seur.filtered, features = top10$gene) + NoLegend()
+
+
+
 
