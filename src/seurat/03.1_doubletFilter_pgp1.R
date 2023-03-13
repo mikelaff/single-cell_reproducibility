@@ -12,7 +12,10 @@ library(mikelaffr)
 
 # OUTPUT FILES #########################################################################################################
 # qc and doublet filtered seurat file
-seurat.qc.df.rds <- here("results/seurat/20230227_PGP1_QC_DF_seurat_object.rds")
+seurat.qc.df.rds <- here("results/seurat/20230227_PGP1_QC_DF_filtered_seurat_object.rds")
+
+# qc and doublet LABELED (doublets are still in the object) seurat file
+seurat.qc.dfLabeled.rds <- here("results/seurat/20230227_PGP1_QC_DF_Labeled_seurat_object.rds")
 
 # INPUT FILES ##########################################################################################################
 # merged seurat filtered file, filtered for mitochondrial read percentage, gene count, and read count
@@ -116,9 +119,44 @@ for (i in 1:length(seur.list)) {
 
 dev.off()
 
-printMessage("Saving seurat list...")
-saveRDS(seur.list, here("results/seurat/TEMP_seur_list_DF.rds"))
-printMessage("Finished Saving.")
+# printMessage("Saving seurat list...")
+# saveRDS(seur.list, here("results/seurat/TEMP_seur_list_DF.rds"))
+# printMessage("Finished Saving.")
+#
+# seur.list <- readRDS(here("results/seurat/TEMP_seur_list_DF.rds"))
 
+# get doublets
+df.doublets <- data.frame()
+
+for (i in 1:length(seur.list)) {
+
+    df.doublets <- bind_rows(df.doublets, seur.list[[i]]@meta.data[,c("cell_name", "DF.name")])
+
+}
+
+# remove doublet list
+rm(seur.list)
+
+# add doublet data to seurat object
+
+head(df.doublets)
+head(df.doublets[rownames(seur.object@meta.data),])
+
+df.doublets <- df.doublets[rownames(seur.object@meta.data),]
+
+all(rownames(seur.object@meta.data) == rownames(df.doublets))
+
+seur.object@meta.data$DF.name <- df.doublets$DF.name
+
+# save doublet labeled qc data
+saveRDS(seur.object, seurat.qc.dfLabeled.rds)
+
+# filter out doublets
+dim(seur.object)
+seur.object <- subset(seur.object, subset = DF.name == "Singlet")
+dim(seur.object)
+
+# save doublet filtered qc data
+saveRDS(seur.object, seurat.qc.df.rds)
 
 

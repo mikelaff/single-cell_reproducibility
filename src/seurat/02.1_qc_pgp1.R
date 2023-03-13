@@ -327,87 +327,6 @@ dim(seurat.merged.filtered)
 # save filtered data
 saveRDS(seurat.merged.filtered, seurat.merged.filtered.rds)
 
-# save each sample into separate seurat object
-# split object into list by sample
-seur.list <- SplitObject(seurat.merged.filtered, split.by = "Sample")
-
-for (i in 1:length(seur.list)) {
-    printMessage(paste(i, "of", length(seur.list), ":", names(seur.list)[i]))
-
-    file.name <- paste0(names(seur.list)[i], "_QC_seurat_object.rds")
-    saveRDS(seur.list[[i]], paste0(by.sample.dir, file.name))
-}
-
-# Doublet Filter ##############
-
-# split object into list by sample
-seur.list <- SplitObject(seurat.merged.filtered, split.by = "Sample")
-
-#pdf("doublet_filter_nFeatures.pdf")
-
-# loop over each sample and run doublet filter
-for (i in 1:length(seur.list)) {
-    printMessage(paste(i, "of", length(seur.list), ":", names(seur.list)[i]))
-
-    wtk.id <- seur.list[[i]]@meta.data$WTK_ID[1]
-
-    if (wtk.id %in% c("WTK1", "WTK2", "WTK3")) {
-        exp.D.ratio <- 0.034
-    } else {
-        exp.D.ratio <- 0.0425
-    }
-
-    seur.list[[i]] <- SCTransform(seur.list[[i]],
-                                  vars.to.regress = c("percent.mt"),
-                                  verbose = FALSE,
-                                  return.only.var.genes = FALSE,
-                                  vst.flavor = "v2",
-                                  method = "glmGamPoi")
-
-    seur.list[[i]] <- RunPCA(seur.list[[i]],
-                             npcs = 20,
-                             verbose = FALSE)
-
-    min.pc <- get_min_pc(seur.list[[i]][["pca"]]@stdev)
-
-    seur.list[[i]] <- RunUMAP(seur.list[[i]],
-                              dims = 1:min.pc)
-
-    seur.list[[i]] <- FindNeighbors(seur.list[[i]],
-                                    dims = 1:min.pc)
-
-    seur.list[[i]] <- FindClusters(seur.list[[i]],
-                                   resolution = 0.1)
-
-    # pK identification (no ground-truth)
-    sweep.res.list <- paramSweep_v3(seur.list[[i]], PCs = 1:min.pc, sct = TRUE)
-    sweep.stats <- summarizeSweep(sweep.res.list, GT = FALSE)
-    bcmvn <- find.pK(sweep.stats)
-
-    # Optimal pK is the max of bomdality coefficent (BCmvn) distribution
-    pK <- as.numeric(as.character(bcmvn$pK))
-    BCmetric <- bcmvn$BCmetric
-    optimal.pk <- pK[which(BCmetric %in% max(BCmetric))]
-
-    # Homotypic doublet proportion estimate
-    nExp.poi <- round(exp.D.ratio * nrow(seur.list[[i]]@meta.data))
-
-    # DoubletFinder
-    seur.list[[i]] <- doubletFinder_v3(seur.list[[i]],
-                                       pN = 0.25,
-                                       pK = optimal.pk,
-                                       nExp = nExp.poi,
-                                       PCs = 1:min.pc,
-                                       sct = TRUE)
-
-    colnames(seur.list[[i]]@meta.data)[grepl("DF.classifications", colnames(seur.list[[i]]@meta.data))] <- "DF.name"
-
-    #VlnPlot(seur.list[[i]], features = "nFeature_RNA", group.by = "DF.name", pt.size = 0.4) + ggtitle(names(seur.list)[i])
-
-
-}
-
-#dev.off()
 
 
 
@@ -415,7 +334,9 @@ for (i in 1:length(seur.list)) {
 
 
 
-# Scratch
+
+
+# Scratch ################
 
 # seur.iviv <- readRDS("/proj/steinlab/projects/IVIV_scRNA/IBIS/data/20230109.keep.snRNA.ppMT.0.75.nC.1500.nF.1000.QCed.rds")
 #
